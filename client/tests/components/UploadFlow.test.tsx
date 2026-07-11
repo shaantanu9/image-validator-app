@@ -82,6 +82,30 @@ describe('Upload flow (/dashboard)', () => {
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
+  // Regression: hydration used to ASSIGN the server's list over local state. GET
+  // /images is in flight for as long as it takes, and a user can drop photos before
+  // it answers — so the response erased the photos they had just picked, silently,
+  // and mid-upload: a queued one never got sent at all.
+  it('keeps photos picked before the server’s list arrives', async () => {
+    let release!: (rows: never[]) => void;
+    listImages.mockReturnValue(
+      new Promise((resolve) => {
+        release = resolve as never;
+      }) as never,
+    );
+
+    render(<DashboardPage />);
+
+    pick([photo('a.jpg', 1), photo('b.jpg', 2)]);
+    expect(screen.getByText('a.jpg')).toBeInTheDocument();
+
+    release([]); // GET /images answers only AFTER the user already picked.
+
+    await waitFor(() => expect(screen.getByText('a.jpg')).toBeInTheDocument());
+    expect(screen.getByText('b.jpg')).toBeInTheDocument();
+    await waitFor(() => expect(uploadImages).toHaveBeenCalledTimes(2), { timeout: 4000 });
+  });
+
   it('uploads picked photos and counts the ones the server stored', async () => {
     render(<DashboardPage />);
 
