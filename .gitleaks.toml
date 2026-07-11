@@ -1,0 +1,20 @@
+# gitleaks config — extend the default rules, then allowlist intentional
+# non-secrets so the Security workflow doesn't false-positive on templates.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Template/example env files hold fake or local-only demo values (never real secrets); real .env is gitignored."
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)\.env\.test\.example$''',
+]
+# Belt-and-braces: the placeholder/demo credential shapes we ship in examples,
+# plus the fake JWT fixture used to test refresh-token rejection (ends in the
+# literal `.invalid-signature`, which no real token has).
+regexes = [
+  '''change-me-[a-z0-9-]+''',
+  '''test-(access|refresh)-token-secret-[a-z0-9-]+''',
+  '''sb_(secret|publishable)_[A-Za-z0-9_-]+''',
+  '''\.invalid-signature''',
+]
