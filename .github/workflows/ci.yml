@@ -161,7 +161,7 @@ jobs:
         run: pnpm --filter server run db:generate
       - name: Run migrations
         run: pnpm --filter server run db:deploy
-      - name: Seed admin user
+      - name: Seed demo user
         run: pnpm --filter server run db:seed
       - name: Bruno API contract tests
         run: pnpm test:api:ci

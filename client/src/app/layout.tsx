@@ -1,12 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 import '@/styles/globals.css';
-import { Navbar } from '@/components/common/Navbar';
+import { SiteHeader } from '@/components/common/SiteHeader';
 import { ServiceWorkerRegistrar } from '@/components/common/ServiceWorkerRegistrar';
 import { SessionProviderWrapper } from '@/components/providers/SessionProviderWrapper';
 import { APP_CONFIG } from '@/constants/config';
 
-const inter = Inter({ subsets: ['latin'] });
+// Poppins does the talking (headings, numerals, the loud copy); Inter does the
+// quiet work (fields, filenames, captions). Exposed as CSS variables so Tailwind's
+// `font-display` / `font-sans` are the only way anything picks a face.
+const body = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const display = Poppins({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: APP_CONFIG.name,
@@ -14,20 +23,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#111827',
+  themeColor: '#f26a3d',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${body.variable} ${display.variable}`}>
       {/* suppressHydrationWarning: browser extensions (Grammarly, ColorZilla's
           cz-shortcut-listen, etc.) inject attributes on <body> before React
           hydrates, which otherwise logs a benign hydration-mismatch warning. */}
-      <body className={inter.className} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <SessionProviderWrapper>
           <ServiceWorkerRegistrar />
-          <Navbar />
-          <main className="min-h-screen bg-gray-50">{children}</main>
+          <SiteHeader />
+          <main className="min-h-screen bg-white">{children}</main>
         </SessionProviderWrapper>
       </body>
     </html>
