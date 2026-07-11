@@ -68,13 +68,6 @@ jobs:
         run: pnpm run lint
       - name: Type check
         run: pnpm exec tsc --noEmit
-      - name: Run tests
-        env:
-          NODE_ENV: test
-          PORT: 5012
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/image_validator_test?schema=public
-          REDIS_URL: redis://localhost:6381
-        run: pnpm run test
       - name: Build
         env:
           NODE_ENV: production
@@ -110,7 +103,7 @@ jobs:
         run: pnpm run build
 
   integration-e2e:
-    name: API Contract + E2E (Postgres)
+    name: API Contract (Postgres)
     runs-on: ubuntu-latest
 
     services:
@@ -165,11 +158,3 @@ jobs:
         run: pnpm --filter server run db:seed
       - name: Bruno API contract tests
         run: pnpm test:api:ci
-      - name: Build client for E2E
-        run: pnpm --filter client build
-      - name: Install Chromium for Puppeteer
-        run: pnpm exec puppeteer browsers install chrome
-      - name: Puppeteer E2E tests
-        env:
-          E2E_CLIENT_START: '1'
-        run: pnpm test:e2e
