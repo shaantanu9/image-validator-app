@@ -1,0 +1,44 @@
+name: image_validator
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: image_validator_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: image_validator_db
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d image_validator_db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    # AOF persistence: a refresh-token write is durable within 1s. Default RDB
+    # snapshots as lazily as once/hour for a single write, so a restart wipes
+    # refresh tokens and every user is logged out on the next 401. See SKILL.md.
+    command: redis-server --appendonly yes
+    container_name: image_validator_redis
+    restart: unless-stopped
+    ports:
+      - '6381:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
