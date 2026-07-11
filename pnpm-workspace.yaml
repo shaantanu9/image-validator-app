@@ -1,0 +1,6 @@
+packages:
+  - 'client'
+  # Three fully-independent backends sharing the same API contract, client, e2e,
+  # and Bruno collection — each on its own port. Pick ONE for a real project and
+  # delete the other folders + their lines here; nothing else references them.
+  - 'server' # Postgres + Prisma       (port 5012, redis 6381) — default

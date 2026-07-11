@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  ACCESS_TOKEN_SECRET: test-access-token-secret-32-chars-long
+  ACCESS_TOKEN_EXPIRY: 15m
+  REFRESH_TOKEN_SECRET: test-refresh-token-secret-32-chars-long
+  REFRESH_TOKEN_EXPIRY: 7d
+  LOG_LEVEL: error
+  # NextAuth (client) — needed at build + runtime for the e2e jobs.
+  AUTH_SECRET: ci-test-auth-secret-0123456789abcdefghijklmnop
+  AUTH_TRUST_HOST: 'true'
+
+jobs:
+  server:
+    name: Server (Postgres) Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: image_validator_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6381:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm run db:generate
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/image_validator_test?schema=public
+          REDIS_URL: redis://localhost:6381
+        run: pnpm run db:deploy
+      - name: Lint
+        run: pnpm run lint
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+      - name: Run tests
+        env:
+          NODE_ENV: test
+          PORT: 5012
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/image_validator_test?schema=public
+          REDIS_URL: redis://localhost:6381
+        run: pnpm run test
+      - name: Build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/image_validator_test?schema=public
+          REDIS_URL: redis://localhost:6381
+        run: pnpm run build
+
+  client:
+    name: Client Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm run lint
+      - name: Type check
+        run: pnpm run type-check
+      - name: Run tests
+        run: pnpm run test
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:5012/api/v1
+        run: pnpm run build
+
+  integration-e2e:
+    name: API Contract + E2E (Postgres)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: image_validator_db
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6381:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # NODE_ENV intentionally unset: the server defaults to development via envalid,
+    # while `next build`/`next start` need production (setting it to development here
+    # triggers the "<Html> outside _document" prerender error during next build).
+    env:
+      PORT: 5012
+      CLIENT_URL: http://localhost:3100
+      API_PREFIX: /api/v1
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5434/image_validator_db?schema=public
+      REDIS_URL: redis://localhost:6381
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:5012/api/v1
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter server run db:generate
+      - name: Run migrations
+        run: pnpm --filter server run db:deploy
+      - name: Seed admin user
+        run: pnpm --filter server run db:seed
+      - name: Bruno API contract tests
+        run: pnpm test:api:ci
+      - name: Build client for E2E
+        run: pnpm --filter client build
+      - name: Install Chromium for Puppeteer
+        run: pnpm exec puppeteer browsers install chrome
+      - name: Puppeteer E2E tests
+        env:
+          E2E_CLIENT_START: '1'
+        run: pnpm test:e2e

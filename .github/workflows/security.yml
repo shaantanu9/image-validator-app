@@ -1,0 +1,72 @@
+name: Security
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1' # weekly Monday scan
+  workflow_dispatch: # allow on-demand security scans from any branch
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # No `version:` — pnpm/action-setup reads it from packageManager in
+      # package.json. Pinning it here conflicts with packageManager and fails.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Fails the job on HIGH/CRITICAL advisories. Lower to informational by
+      # adding `continue-on-error: true` if a transitive advisory blocks you.
+      - name: pnpm audit (high+)
+        run: pnpm audit --audit-level high
+
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Run the gitleaks binary directly — the v2 action requires a paid license
+      # for GitHub organizations and can fail keyless; the binary is free and
+      # reliable. Config + allowlist live in .gitleaks.toml.
+      - name: Run gitleaks
+        run: |
+          VER=8.21.2
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --no-banner
+
+  codeql:
+    name: CodeQL (JS/TS SAST)
+    runs-on: ubuntu-latest
+    # CodeQL code scanning needs a PUBLIC repo (free) or GitHub Advanced Security
+    # (for private repos). On a private repo without GHAS the SARIF upload fails
+    # with "Resource not accessible by integration", so this job runs only when
+    # the repo is public. The Dependency Audit + Secret Scan jobs above are the
+    # always-enforced SOC gates.
+    if: ${{ !github.event.repository.private }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

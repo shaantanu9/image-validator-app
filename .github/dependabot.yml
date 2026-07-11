@@ -1,0 +1,28 @@
+# Dependency vulnerability management (SOC 2 CC7.1 / CC8.1).
+# Keeps dependencies patched across every package in the monorepo.
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 10
+    groups:
+      dev-dependencies:
+        dependency-type: 'development'
+  - package-ecosystem: 'npm'
+    directory: '/client'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'npm'
+    directory: '/server'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+  - package-ecosystem: 'docker'
+    directory: '/server'
+    schedule:
+      interval: 'weekly'

@@ -1,0 +1,48 @@
+{
+  "name": "image_validator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Image Validator — Next.js client and Express API on PostgreSQL",
+  "scripts": {
+    "free:ports": "node scripts/free-port.mjs 5012 3100",
+    "predev": "node scripts/free-port.mjs 5012 3100",
+    "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
+    "build": "pnpm --filter server build && pnpm --filter client build",
+    "start": "pnpm --filter server start",
+    "test": "pnpm --filter server test && pnpm --filter client test",
+    "test:api": "pnpm test:api",
+    "test:api:ci": "concurrently --kill-others --success first \"pnpm --filter server dev\" \"sleep 8 && pnpm --filter server run db:seed && pnpm test:api\"",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
+    "test:all": "pnpm test && pnpm test:api:ci && pnpm test:e2e",
+    "lint": "pnpm --filter server lint && pnpm --filter client lint",
+    "format": "pnpm --filter server format && pnpm --filter client format",
+    "type-check": "pnpm --filter server exec tsc --noEmit && pnpm --filter client type-check",
+    "db:up": "docker compose -f server/docker-compose.yml up -d",
+    "db:down": "docker compose -f server/docker-compose.yml down",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@usebruno/cli": "^3.5.1",
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "puppeteer": "^25.3.0",
+    "vitest": "^3.2.7"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.5.0",
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.10",
+      "esbuild": "^0.28.1",
+      "ioredis": "5.11.1",
+      "form-data": ">=4.0.6",
+      "uuid": ">=11.1.1"
+    }
+  }
+}
