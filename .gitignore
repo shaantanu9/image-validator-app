@@ -8,6 +8,10 @@ dist/
 build/
 .next/
 out/
+test/
+server/tests/
+e2e/
+client/public/__tmp_test__/
 
 # Environment variables
 .env
@@ -42,3 +46,6 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# Scratch upload fixtures — web-served from public/, referenced by no code.
+client/public/__tmp_test__/
