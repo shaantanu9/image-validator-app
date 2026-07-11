@@ -24,7 +24,7 @@ export interface RejectionCopy {
   action: 'crop' | 'replace';
 }
 
-export const REJECTION_COPY: Record<RejectionReason, RejectionCopy> = {
+const REJECTION_COPY: Record<RejectionReason, RejectionCopy> = {
   BLURRY: {
     label: 'Blurry face detected',
     message:

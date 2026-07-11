@@ -12,5 +12,3 @@ export const getPrisma = (): PrismaClient => prisma;
 if (appConfig.isDev) {
   globalForPrisma.prisma = prisma;
 }
-
-export default prisma;

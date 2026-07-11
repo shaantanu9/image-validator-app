@@ -35,10 +35,6 @@ export class ApiError extends Error {
     return new ApiError(HTTP_STATUS.UNAUTHORIZED, message);
   }
 
-  static forbidden(message: string): ApiError {
-    return new ApiError(HTTP_STATUS.FORBIDDEN, message);
-  }
-
   static notFound(message: string): ApiError {
     return new ApiError(HTTP_STATUS.NOT_FOUND, message);
   }

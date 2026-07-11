@@ -24,5 +24,3 @@ redis.on('error', (err: Error) => {
 export const closeRedis = async (): Promise<void> => {
   await redis.quit();
 };
-
-export default redis;

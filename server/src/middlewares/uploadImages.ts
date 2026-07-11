@@ -6,14 +6,14 @@ import { MESSAGES } from '../constants/messages';
 import { validationConfig } from '../config/validation.config';
 
 /** Files per batch. */
-export const MAX_BATCH_FILES = 20;
+const MAX_BATCH_FILES = 20;
 
 /**
  * multer's `fileSize` is PER FILE, not per request. With 20 files allowed, the
  * parser alone would happily buffer 20 x 10 MB = 200 MB of RAM before any of our
  * code runs. multer cannot express a total-body bound, so we add one.
  */
-export const MAX_BATCH_TOTAL_BYTES = 50 * 1024 * 1024;
+const MAX_BATCH_TOTAL_BYTES = 50 * 1024 * 1024;
 
 const limits: Options['limits'] = {
   fileSize: validationConfig.maxBytes,

@@ -14,7 +14,7 @@
  *
  * The only correct form is an explicit finite check.
  */
-export const num = (v: string | undefined, fallback: number): number => {
+const num = (v: string | undefined, fallback: number): number => {
   if (v === undefined || v.trim() === '') return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;

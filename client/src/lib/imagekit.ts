@@ -8,7 +8,7 @@ export interface ImageKitUploadResult {
   thumbnailUrl?: string;
 }
 
-export interface UploadOptions {
+interface UploadOptions {
   /** Abort the request — used when the user removes a photo mid-flight. */
   signal?: AbortSignal;
   /** 0–100. Only fires when the browser reports a total size. */

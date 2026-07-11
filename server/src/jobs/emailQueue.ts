@@ -4,7 +4,7 @@ import { appConfig } from '../config/app.config';
 import logger from '../utils/logger';
 
 export const EMAIL_QUEUE = 'emails';
-export const WELCOME_EMAIL = 'welcome-email';
+const WELCOME_EMAIL = 'welcome-email';
 
 export interface WelcomeEmailData {
   userId: string;

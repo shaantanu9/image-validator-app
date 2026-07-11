@@ -1,8 +1,6 @@
 import { prisma } from './prisma/client';
 import logger from '../utils/logger';
 
-export { userRepository } from './repositories';
-
 export const connectDatabase = async (): Promise<void> => {
   await prisma.$connect();
   logger.info('PostgreSQL connected successfully');

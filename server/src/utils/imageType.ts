@@ -79,11 +79,3 @@ export const sniffImageFormat = (buf: Buffer): SniffedFormat | null => {
 
 export const isAcceptedFormat = (f: SniffedFormat | null): f is AcceptedFormat =>
   f !== null && (ACCEPTED_FORMATS as readonly string[]).includes(f);
-
-// The mime of the ORIGINAL upload. Note a HEIC is transcoded to JPEG before it is
-// stored, so its stored mime differs from this one.
-export const MIME_BY_FORMAT: Record<AcceptedFormat, string> = {
-  jpeg: 'image/jpeg',
-  png: 'image/png',
-  heic: 'image/heic',
-};

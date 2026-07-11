@@ -7,7 +7,6 @@ export const MESSAGES = {
   NOT_FOUND: 'Resource not found.',
   INTERNAL_SERVER_ERROR: 'Internal server error.',
   UNAUTHORIZED: 'Unauthorized access.',
-  FORBIDDEN: 'Access forbidden.',
   BAD_REQUEST: 'Bad request.',
   TOO_MANY_REQUESTS: 'Too many requests. Please try again later.',
 
@@ -33,5 +32,3 @@ export const MESSAGES = {
   IMAGE_INVALID_TYPE: 'Only JPEG, PNG, and HEIC images are accepted.',
   UPLOAD_FAILED: 'The image could not be uploaded. Please try again.',
 } as const;
-
-export type MessageKey = keyof typeof MESSAGES;

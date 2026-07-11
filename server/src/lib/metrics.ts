@@ -106,7 +106,7 @@ const COS: number[][] = Array.from({ length: DCT_SIZE }, (_, x) =>
 );
 
 /** Separable 2-D DCT-II over a 32x32 greyscale block. */
-export const dct2d = (px: Float64Array): Float64Array => {
+const dct2d = (px: Float64Array): Float64Array => {
   const rows = new Float64Array(DCT_SIZE * DCT_SIZE);
   for (let y = 0; y < DCT_SIZE; y++) {
     for (let u = 0; u < DCT_SIZE; u++) {
@@ -126,7 +126,7 @@ export const dct2d = (px: Float64Array): Float64Array => {
   return out;
 };
 
-export const pHashFromGray = (gray: Uint8Array | Buffer): string => {
+const pHashFromGray = (gray: Uint8Array | Buffer): string => {
   const px = new Float64Array(DCT_SIZE * DCT_SIZE);
   for (let i = 0; i < DCT_SIZE * DCT_SIZE; i++) px[i] = gray[i]!;
 

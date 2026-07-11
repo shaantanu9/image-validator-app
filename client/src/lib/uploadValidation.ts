@@ -16,7 +16,7 @@ const extensionOf = (name: string): string => name.split('.').pop()?.toLowerCase
  * and Firefox report an EMPTY `file.type` for `.heic`, and a MIME-only check
  * would silently reject every photo straight off an iPhone.
  */
-export const isAcceptedImage = (file: File): boolean =>
+const isAcceptedImage = (file: File): boolean =>
   (ACCEPTED_MIME_TYPES as readonly string[]).includes(file.type) ||
   (ACCEPTED_EXTENSIONS as readonly string[]).includes(extensionOf(file.name));
 
