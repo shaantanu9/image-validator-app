@@ -19,7 +19,7 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # No `version:` — pnpm/action-setup reads it from packageManager in
       # package.json. Pinning it here conflicts with packageManager and fails.
       - uses: pnpm/action-setup@v4
@@ -38,7 +38,7 @@ jobs:
     name: Secret Scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Run the gitleaks binary directly — the v2 action requires a paid license
@@ -60,7 +60,7 @@ jobs:
     # always-enforced SOC gates.
     if: ${{ !github.event.repository.private }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
