@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Loader2, RotateCw, TriangleAlert, X } from 'lucide-react';
+import { Check, FileImage, Loader2, RotateCw, TriangleAlert, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatBytes } from '@/lib/uploadValidation';
 import type { QueuedPhoto } from '@/hooks/useUploadQueue';
@@ -21,6 +21,11 @@ export const PhotoRow = ({ photo, onRemove, onRetry }: PhotoRowProps) => {
   const done = photo.status === 'done';
   const busy = photo.status === 'uploading' || photo.status === 'queued';
 
+  // Prefer whatever the server stored (it has transcoded a HEIC to something the
+  // browser can paint); fall back to the local file only when it's renderable.
+  const thumbnail =
+    photo.result?.thumbnailUrl ?? photo.result?.url ?? (photo.canPreview ? photo.previewUrl : null);
+
   return (
     <li
       className={cn(
@@ -29,16 +34,24 @@ export const PhotoRow = ({ photo, onRemove, onRetry }: PhotoRowProps) => {
       )}
     >
       <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-sand-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={photo.previewUrl}
-          alt=""
-          className={cn(
-            'h-full w-full object-cover transition-opacity',
-            busy && 'opacity-50',
-            failed && 'opacity-40 grayscale',
-          )}
-        />
+        {/* A HEIC can't be painted by the browser, so until the server hands back
+            a transcoded URL there is nothing to show but a placeholder. */}
+        {thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob/remote URL, not a build-time asset
+          <img
+            src={thumbnail}
+            alt=""
+            className={cn(
+              'h-full w-full object-cover transition-opacity',
+              busy && 'opacity-50',
+              failed && 'opacity-40 grayscale',
+            )}
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center">
+            <FileImage aria-hidden className="h-5 w-5 text-sand-400" />
+          </span>
+        )}
         {done && (
           <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-success-500 ring-2 ring-white">
             <Check aria-hidden className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />

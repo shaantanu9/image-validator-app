@@ -84,9 +84,11 @@ export const UploadedPanel = ({ photos, uploaded }: UploadedPanelProps) => {
                 key={photo.id}
                 className="group relative aspect-square animate-fade-up overflow-hidden rounded-2xl bg-sand-100 ring-1 ring-sand-200"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {/* Every photo in this grid is stored, so the server's URL always
+                    exists — and it's the only one that can paint a HEIC. */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- remote ImageKit URL, not a build-time asset */}
                 <img
-                  src={photo.result?.thumbnailUrl ?? photo.previewUrl}
+                  src={photo.result?.thumbnailUrl ?? photo.result?.url ?? photo.previewUrl}
                   alt={photo.name}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />

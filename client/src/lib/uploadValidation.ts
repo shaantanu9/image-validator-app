@@ -1,9 +1,32 @@
 import {
+  ACCEPTED_EXTENSIONS,
   ACCEPTED_MIME_TYPES,
+  LOCALLY_RENDERABLE_MIME_TYPES,
   MAX_IMAGE_BYTES,
   MAX_PHOTOS,
   ACCEPTED_LABEL,
 } from '@/constants/upload';
+
+const extensionOf = (name: string): string => name.split('.').pop()?.toLowerCase() ?? '';
+
+/**
+ * Is this a format the server takes?
+ *
+ * Checks the MIME type first, then falls back to the extension — because Chrome
+ * and Firefox report an EMPTY `file.type` for `.heic`, and a MIME-only check
+ * would silently reject every photo straight off an iPhone.
+ */
+export const isAcceptedImage = (file: File): boolean =>
+  (ACCEPTED_MIME_TYPES as readonly string[]).includes(file.type) ||
+  (ACCEPTED_EXTENSIONS as readonly string[]).includes(extensionOf(file.name));
+
+/**
+ * Can the browser paint this file in an <img>? HEIC can't be decoded outside
+ * Safari, so its local preview would render as a broken image — callers show a
+ * placeholder until the server returns the transcoded URL.
+ */
+export const isLocallyRenderable = (file: File): boolean =>
+  (LOCALLY_RENDERABLE_MIME_TYPES as readonly string[]).includes(file.type);
 
 export type RejectionReason = 'type' | 'size' | 'duplicate' | 'full';
 
@@ -63,7 +86,7 @@ export const screenFiles = (
       continue;
     }
 
-    if (!(ACCEPTED_MIME_TYPES as readonly string[]).includes(file.type)) {
+    if (!isAcceptedImage(file)) {
       rejected.push({
         file,
         reason: 'type',

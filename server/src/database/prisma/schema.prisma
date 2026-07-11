@@ -16,6 +16,67 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  images    Image[]
+
   @@index([email])
   @@map("users")
+}
+
+enum ImageStatus {
+  ACCEPTED
+  REJECTED
+}
+
+/// One upload attempt. REJECTED rows are kept deliberately: the user asked why a
+/// photo was refused, and "we threw it away" is not an answer.
+model Image {
+  id           String      @id @default(uuid()) @db.Uuid
+  ownerId      String      @map("owner_id") @db.Uuid
+  owner        User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  originalName String      @map("original_name")
+  status       ImageStatus
+
+  /// Set only when status = REJECTED. The machine-readable rule that fired.
+  rejectionReason String?  @map("rejection_reason")
+  rejectionDetail String?  @map("rejection_detail")
+
+  /// The format of the ORIGINAL upload (jpeg | png | heic). A HEIC is stored as a
+  /// transcoded JPEG, so this differs from the stored bytes' format.
+  format       String?
+  /// True when the original was HEIC and we transcoded it.
+  transcoded   Boolean     @default(false)
+
+  bytes        Int?
+  width        Int?
+  height       Int?
+
+  /// Whole-frame Laplacian variance — the sanity floor.
+  frameSharpness Float?    @map("frame_sharpness")
+  /// Laplacian variance INSIDE the face box — the real blur measure.
+  faceSharpness  Float?    @map("face_sharpness")
+  /// The LANDMARK-derived face box, not the detector's box.
+  faceBox      Json?       @map("face_box")
+
+  /// 64-bit DCT perceptual hash, 16 hex chars. NULL on rejected rows.
+  pHash        String?     @map("phash")
+  /// The 4 namespaced 16-bit bands of pHash. Indexed with GIN so the duplicate
+  /// prefilter is an indexed array-overlap, not a full scan of the owner's corpus.
+  pHashBands   String[]    @map("phash_bands")
+  /// Which hash produced pHash. Two libraries' "pHash" values are NOT comparable —
+  /// mixing them yields a Hamming distance around 32, i.e. pure noise, with no
+  /// error raised. Recording the algorithm makes a future migration detectable.
+  pHashAlgorithm String?   @map("phash_algorithm")
+
+  /// The storage key. We store the KEY and sign a URL on READ — never persist a
+  /// presigned URL, which would expire and 404 every image within days.
+  storageKey   String?     @map("storage_key")
+  storageUrl   String?     @map("storage_url")
+
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  /// The corpus query for rule 3: owner-scoped, accepted-only, by hash band.
+  @@index([ownerId, status])
+  @@index([ownerId, createdAt])
+  @@map("images")
 }

@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { uploadImage, type ImageKitUploadResult } from '@/lib/imagekit';
 import { handleApiError } from '@/lib/api';
-import { fileKey, screenFiles, type RejectedFile } from '@/lib/uploadValidation';
+import {
+  fileKey,
+  isLocallyRenderable,
+  screenFiles,
+  type RejectedFile,
+} from '@/lib/uploadValidation';
 import { MAX_PHOTOS, MIN_PHOTOS, UPLOAD_CONCURRENCY } from '@/constants/upload';
 
 export type PhotoStatus = 'queued' | 'uploading' | 'done' | 'error';
@@ -20,6 +25,12 @@ export interface QueuedPhoto {
   progress: number;
   /** Object URL for the local thumbnail. Revoked when the photo is removed. */
   previewUrl: string;
+  /**
+   * False for HEIC: no browser outside Safari can paint it, so the local preview
+   * would be a broken image. The UI shows a placeholder until `result` arrives
+   * with the server's transcoded URL.
+   */
+  canPreview: boolean;
   /** Set once the server has stored it. */
   result?: ImageKitUploadResult;
   /** Set when the upload failed. Safe to show to the user. */
@@ -122,6 +133,7 @@ export const useUploadQueue = () => {
         status: 'queued',
         progress: 0,
         previewUrl: URL.createObjectURL(file),
+        canPreview: isLocallyRenderable(file),
       }));
 
       return [...current, ...added];
