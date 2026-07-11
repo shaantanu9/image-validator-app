@@ -10,7 +10,7 @@ pnpm db:up                                   # PostgreSQL + Redis via Docker
 cp server/.env.example server/.env
 cp client/.env.example client/.env.local     # set AUTH_SECRET: openssl rand -base64 33
 pnpm --filter server db:deploy           # apply Prisma migrations
-pnpm --filter server db:seed             # seed the admin user
+pnpm --filter server db:seed             # seed the demo user
 pnpm dev                                     # client :3000 · server :5012
 ```
 
@@ -44,7 +44,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/). `commitlint` r
 ```
 feat: add refresh-token rotation
 fix: correct PORT default in env config
-test: cover authMiddleware role checks
+test: cover authMiddleware token verification
 refactor: extract user pagination into service
 chore: bump dependencies
 docs: expand README testing section

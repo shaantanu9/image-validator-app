@@ -7,7 +7,7 @@
 - **Client** — Next.js 15 (App Router), Tailwind, Zustand
 - **API** — Express + TypeScript, layered `routes → controllers → services → repositories`
 - **Database** — PostgreSQL via Prisma, Redis for rate limiting and refresh tokens
-- **Auth** — JWT access tokens + rotating refresh tokens, RBAC
+- **Auth** — JWT access tokens + rotating refresh tokens; no roles — every route acts only on the caller's own record
 
 ## Run it
 
@@ -17,7 +17,7 @@ pnpm db:up
 cp server/.env.example server/.env
 cp client/.env.example client/.env.local
 pnpm --filter server db:deploy           # apply Prisma migrations
-pnpm --filter server db:seed             # seed the admin user
+pnpm --filter server db:seed             # seed the demo user
 pnpm dev
 ```
 

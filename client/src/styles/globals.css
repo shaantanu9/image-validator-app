@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* The one gradient in the product. Progress is a material: the top bar, the
+       "N of 10" rule, and a completed photo's ring are all the same coral→amber
+       sweep, so a photo landing reads as the same thing advancing everywhere. */
+    --brand-sweep: linear-gradient(
+      90deg,
+      #f2543d 0%,
+      #f26a3d 30%,
+      #f5a623 68%,
+      #fbbf54 100%
+    );
+  }
+
+  * {
+    @apply border-sand-200;
+  }
+
+  body {
+    @apply bg-white font-sans text-sand-900 antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Keyboard users get the brand ring; mouse users get nothing. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  .brand-sweep {
+    background-image: var(--brand-sweep);
+  }
+
+  .brand-sweep-text {
+    background-image: var(--brand-sweep);
+    @apply bg-clip-text text-transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
