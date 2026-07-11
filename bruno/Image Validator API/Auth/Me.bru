@@ -1,0 +1,27 @@
+meta {
+  name: Me
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return current user", function() {
+    const json = res.getBody();
+    expect(json.success).to.be.true;
+    expect(json.data.email).to.equal(bru.getVar("registerEmail"));
+  });
+}

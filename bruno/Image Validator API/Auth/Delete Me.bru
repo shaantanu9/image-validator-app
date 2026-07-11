@@ -1,0 +1,21 @@
+meta {
+  name: Delete Me
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{deleteAccessToken}}
+}
+
+tests {
+  test("should return 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

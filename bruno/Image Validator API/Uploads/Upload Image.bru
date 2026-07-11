@@ -1,0 +1,34 @@
+meta {
+  name: Upload Image
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/uploads/image
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:multipart-form {
+  image: @file(fixtures/pixel.png)
+}
+
+tests {
+  test("should return 201 (configured) or 503 (not configured)", function() {
+    expect([201, 503]).to.include(res.getStatus());
+  });
+
+  test("should return the uploaded image URL when configured", function() {
+    if (res.getStatus() === 201) {
+      const json = res.getBody();
+      expect(json.success).to.be.true;
+      expect(json.data.url).to.be.a("string");
+      expect(json.data.url).to.contain("imagekit.io");
+    }
+  });
+}

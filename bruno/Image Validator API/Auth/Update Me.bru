@@ -1,0 +1,33 @@
+meta {
+  name: Update Me
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/auth/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{deleteAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Name"
+  }
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return the updated name", function() {
+    const json = res.getBody();
+    expect(json.success).to.be.true;
+    expect(json.data.name).to.equal("Updated Name");
+  });
+}

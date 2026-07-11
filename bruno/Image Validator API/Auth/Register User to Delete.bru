@@ -1,0 +1,36 @@
+meta {
+  name: Register User to Delete
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{deleteEmail}}",
+    "password": "SecureP@ssw0rd1",
+    "name": "Bruno Delete"
+  }
+}
+
+script:pre-request {
+  const email = `bruno-delete-${Date.now()}@example.com`;
+  bru.setVar("deleteEmail", email);
+}
+
+tests {
+  test("should return 201 Created", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should store user id and tokens", function() {
+    const json = res.getBody();
+    bru.setVar("deleteUserId", json.data.user.id);
+    bru.setVar("deleteAccessToken", json.data.tokens.accessToken);
+  });
+}
