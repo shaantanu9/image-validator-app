@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DashboardPage from '@/app/(protected)/dashboard/page';
-import * as imagekit from '@/lib/imagekit';
+import * as images from '@/lib/images';
+import type { AcceptedImage, UploadResult } from '@/types/images';
 
 // The page's only real dependencies are the session (for the top bar's sign-out)
 // and the upload call. Everything else — screening, the queue, the counters — is
@@ -18,9 +19,15 @@ vi.mock('@/hooks/useAuth', () => ({
   }),
 }));
 
-vi.mock('@/lib/imagekit', () => ({ uploadImage: vi.fn() }));
+vi.mock('@/lib/images', () => ({
+  uploadImages: vi.fn(),
+  listImages: vi.fn(),
+  deleteImage: vi.fn(),
+}));
 
-const uploadImage = vi.mocked(imagekit.uploadImage);
+const uploadImages = vi.mocked(images.uploadImages);
+const listImages = vi.mocked(images.listImages);
+const deleteImage = vi.mocked(images.deleteImage);
 
 const photo = (name: string, lastModified: number, type = 'image/jpeg') =>
   new File([new Uint8Array(64)], name, { type, lastModified });
@@ -28,18 +35,41 @@ const photo = (name: string, lastModified: number, type = 'image/jpeg') =>
 const pick = (files: File[]) =>
   fireEvent.change(screen.getByTestId('photo-input'), { target: { files } });
 
+/** The server answers 200 with a verdict per file — one file in, one verdict out. */
+const accepted = (file: File): AcceptedImage => ({
+  id: file.name,
+  originalName: file.name,
+  status: 'ACCEPTED',
+  url: `https://cdn.example/${file.name}`,
+  format: 'jpeg',
+  transcoded: false,
+  width: 800,
+  height: 800,
+  bytes: file.size,
+  faceSharpness: 120,
+  faceBox: { left: 100, top: 100, width: 300, height: 300 },
+  createdAt: new Date(0).toISOString(),
+});
+
+const verdict = (files: File[]): UploadResult => ({
+  accepted: files.map(accepted),
+  rejected: [],
+  meta: { total: files.length, accepted: files.length, rejected: 0 },
+});
+
 describe('Upload flow (/dashboard)', () => {
   beforeEach(() => {
     // jsdom has no object-URL implementation, and the queue creates one per photo.
     URL.createObjectURL = vi.fn(() => 'blob:preview');
     URL.revokeObjectURL = vi.fn();
 
-    uploadImage.mockReset();
-    uploadImage.mockImplementation(async (file) => ({
-      url: `https://cdn.example/${file.name}`,
-      fileId: file.name,
-      name: file.name,
-    }));
+    uploadImages.mockReset();
+    listImages.mockReset();
+    deleteImage.mockReset();
+
+    uploadImages.mockImplementation(async (files) => verdict(files));
+    listImages.mockResolvedValue([]);
+    deleteImage.mockResolvedValue(undefined);
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -61,7 +91,7 @@ describe('Upload flow (/dashboard)', () => {
     expect(screen.getByText('a.jpg')).toBeInTheDocument();
     expect(screen.getByText('b.jpg')).toBeInTheDocument();
 
-    await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(uploadImages).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument());
 
     // Two stored, so the set is still short of the six-photo minimum.
@@ -73,7 +103,7 @@ describe('Upload flow (/dashboard)', () => {
 
     pick(Array.from({ length: 6 }, (_, i) => photo(`p${i}.jpg`, i)));
 
-    await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(6));
+    await waitFor(() => expect(uploadImages).toHaveBeenCalledTimes(6));
     await waitFor(() => expect(screen.getByText(/your set is ready/i)).toBeInTheDocument());
   });
 
@@ -84,24 +114,25 @@ describe('Upload flow (/dashboard)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/not added/i);
     expect(screen.getByText(/isn’t a supported image/i)).toBeInTheDocument();
-    expect(uploadImage).not.toHaveBeenCalled();
+    expect(uploadImages).not.toHaveBeenCalled();
   });
 
   it('refuses the same photo twice', async () => {
     render(<DashboardPage />);
 
     pick([photo('a.jpg', 1)]);
-    await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(uploadImages).toHaveBeenCalledTimes(1));
 
     pick([photo('a.jpg', 1)]);
 
     expect(await screen.findByText(/already added this photo/i)).toBeInTheDocument();
     // Still only the one upload — the duplicate never left the browser.
-    expect(uploadImage).toHaveBeenCalledTimes(1);
+    expect(uploadImages).toHaveBeenCalledTimes(1);
   });
 
   it('surfaces a failed upload and can retry it', async () => {
-    uploadImage.mockRejectedValueOnce(new Error('Network error'));
+    // A transport failure — NOT a rejected photo. Those come back as a 200 verdict.
+    uploadImages.mockRejectedValueOnce(new Error('Network error'));
     render(<DashboardPage />);
 
     pick([photo('a.jpg', 1)]);
@@ -109,22 +140,28 @@ describe('Upload flow (/dashboard)', () => {
     const retry = await screen.findByRole('button', { name: /retry a\.jpg/i });
     expect(screen.getByText('Network error')).toBeInTheDocument();
 
-    // The retry goes back to the server, and the photo lands.
-    uploadImage.mockResolvedValueOnce({ url: 'https://cdn/a', fileId: 'a', name: 'a.jpg' });
+    // The retry goes back to the server (falling through to the default
+    // implementation, which accepts), and the photo lands.
     fireEvent.click(retry);
 
     await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
   });
 
-  it('removes a photo from the set', async () => {
+  // Removing a stored photo must delete it on the SERVER too. If it only left local
+  // state, the duplicate rule would keep matching a row the user believes is gone —
+  // and they'd be told a brand-new photo is "too similar" to an invisible one.
+  it('removes a photo from the set, and deletes it on the server', async () => {
     render(<DashboardPage />);
 
     pick([photo('a.jpg', 1)]);
     await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /remove a\.jpg/i }));
+    // An accepted photo offers Remove in two places — the upload list on the left
+    // and the grid on the right. Either one removes it; take the first.
+    fireEvent.click(screen.getAllByRole('button', { name: /remove a\.jpg/i })[0]);
 
     await waitFor(() => expect(screen.queryByText('a.jpg')).not.toBeInTheDocument());
+    await waitFor(() => expect(deleteImage).toHaveBeenCalledWith('a.jpg'));
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview');
   });
 
@@ -133,7 +170,7 @@ describe('Upload flow (/dashboard)', () => {
 
     pick(Array.from({ length: 11 }, (_, i) => photo(`p${i}.jpg`, i)));
 
-    await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(10));
+    await waitFor(() => expect(uploadImages).toHaveBeenCalledTimes(10));
     expect(screen.getByText(/you can upload 10 photos/i)).toBeInTheDocument();
     expect(screen.getByTestId('photo-input')).toBeDisabled();
   });

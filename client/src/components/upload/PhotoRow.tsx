@@ -18,13 +18,16 @@ interface PhotoRowProps {
  */
 export const PhotoRow = ({ photo, onRemove, onRetry }: PhotoRowProps) => {
   const failed = photo.status === 'error';
-  const done = photo.status === 'done';
+  const done = photo.status === 'accepted';
+  // A REJECTED photo is not a failure — the upload worked, the photo just didn't
+  // meet the guidelines. It gets its own panel; here it only needs to look settled,
+  // not alarming, and it must NOT offer a Retry (same bytes, same verdict).
+  const rejected = photo.status === 'rejected';
   const busy = photo.status === 'uploading' || photo.status === 'queued';
 
   // Prefer whatever the server stored (it has transcoded a HEIC to something the
   // browser can paint); fall back to the local file only when it's renderable.
-  const thumbnail =
-    photo.result?.thumbnailUrl ?? photo.result?.url ?? (photo.canPreview ? photo.previewUrl : null);
+  const thumbnail = photo.accepted?.url ?? (photo.canPreview ? photo.previewUrl : null);
 
   return (
     <li
@@ -65,6 +68,8 @@ export const PhotoRow = ({ photo, onRemove, onRetry }: PhotoRowProps) => {
         </p>
         {failed ? (
           <p className="truncate text-xs text-danger-700">{photo.error}</p>
+        ) : rejected ? (
+          <p className="truncate text-xs text-sand-600">{photo.rejection?.label}</p>
         ) : busy ? (
           <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-sand-200">
             <div

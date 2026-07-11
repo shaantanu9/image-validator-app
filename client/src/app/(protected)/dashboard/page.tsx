@@ -19,11 +19,13 @@ export default function DashboardPage() {
   const {
     photos,
     rejections,
+    rejectedPhotos,
     addFiles,
     remove,
     retry,
     dismissRejections,
     uploaded,
+    occupied,
     isUploading,
     isFull,
     remainingSlots,
@@ -113,7 +115,9 @@ export default function DashboardPage() {
               <p className="mt-6 text-sm text-sand-500">
                 {isUploading
                   ? 'Uploading — this can take up to a minute.'
-                  : `${photos.length} of ${MAX_PHOTOS} photos added.`}
+                  : // `occupied`, not `photos.length`: a rejected photo is still listed
+                    // below (so it can be replaced) but it does not hold a slot.
+                    `${occupied} of ${MAX_PHOTOS} photos added.`}
               </p>
               <ul className="mt-3 space-y-2">
                 {photos.map((photo) => (
@@ -125,7 +129,12 @@ export default function DashboardPage() {
         </aside>
 
         <section className="min-w-0 border-t border-sand-200 pt-10 lg:border-l lg:border-t-0 lg:pl-14 lg:pt-0">
-          <UploadedPanel photos={photos} uploaded={uploaded} />
+          <UploadedPanel
+            photos={photos}
+            uploaded={uploaded}
+            rejectedPhotos={rejectedPhotos}
+            onRemove={remove}
+          />
         </section>
       </div>
     </div>

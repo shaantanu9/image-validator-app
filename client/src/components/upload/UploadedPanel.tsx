@@ -1,18 +1,27 @@
 'use client';
 
-import { Ban, CircleCheck, ImageIcon, PartyPopper } from 'lucide-react';
+import { Ban, CircleCheck, ImageIcon, PartyPopper, Trash2 } from 'lucide-react';
 import { Disclosure } from '@/components/upload/Disclosure';
 import { ProgressSweep } from '@/components/upload/ProgressSweep';
 import { MAX_PHOTOS, MIN_PHOTOS, PHOTO_REQUIREMENTS, PHOTO_RESTRICTIONS } from '@/constants/upload';
-import type { QueuedPhoto } from '@/hooks/useUploadQueue';
+import { RejectedPanel } from '@/components/upload/RejectedPanel';
+import type { QueuedPhoto, RejectedPhoto } from '@/hooks/useUploadQueue';
 
 interface UploadedPanelProps {
   photos: QueuedPhoto[];
   uploaded: number;
+  /** Photos the SERVER declined against the six validation rules. */
+  rejectedPhotos: RejectedPhoto[];
+  onRemove: (id: string) => void;
 }
 
-export const UploadedPanel = ({ photos, uploaded }: UploadedPanelProps) => {
-  const stored = photos.filter((photo) => photo.status === 'done');
+export const UploadedPanel = ({
+  photos,
+  uploaded,
+  rejectedPhotos,
+  onRemove,
+}: UploadedPanelProps) => {
+  const stored = photos.filter((photo) => photo.status === 'accepted');
   const shortBy = Math.max(0, MIN_PHOTOS - uploaded);
 
   return (
@@ -78,25 +87,47 @@ export const UploadedPanel = ({ photos, uploaded }: UploadedPanelProps) => {
             </p>
           )}
 
-          <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+          <ul className="grid grid-cols-3 gap-3 rounded-3xl bg-success-50/50 p-3 sm:grid-cols-4 lg:grid-cols-5">
             {stored.map((photo) => (
               <li
                 key={photo.id}
                 className="group relative aspect-square animate-fade-up overflow-hidden rounded-2xl bg-sand-100 ring-1 ring-sand-200"
               >
-                {/* Every photo in this grid is stored, so the server's URL always
-                    exists — and it's the only one that can paint a HEIC. */}
+                {/* Every photo in this grid was ACCEPTED, so the server has stored
+                    it — and the server's URL is the only one that can paint a HEIC,
+                    because it points at the transcoded JPEG. The local object URL is
+                    a fallback for when the CDN is not configured. */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- remote ImageKit URL, not a build-time asset */}
                 <img
-                  src={photo.result?.thumbnailUrl ?? photo.result?.url ?? photo.previewUrl}
+                  src={photo.accepted?.url ?? photo.previewUrl}
                   alt={photo.name}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
+
+                {/* An accepted photo must be removable too — otherwise a full set is
+                    a dead end, and the user can never swap a merely-OK photo for a
+                    better one. `onRemove` deletes the server row as well, so this
+                    frees a real slot rather than just hiding a thumbnail.
+                    Always rendered (not hover-only) so it works on touch. */}
+                <button
+                  type="button"
+                  onClick={() => onRemove(photo.id)}
+                  aria-label={`Remove ${photo.name}`}
+                  className="hover:text-danger-600 absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sand-700 opacity-0 shadow-card backdrop-blur-sm transition-all hover:bg-white focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+                >
+                  <Trash2 aria-hidden className="h-4 w-4" />
+                </button>
               </li>
             ))}
           </ul>
         </div>
       )}
+
+      {/* Sits OUTSIDE the branch above on purpose: if every photo was rejected,
+          `stored` is empty and the user still has to be told why. Rendering this
+          only alongside the accepted grid would leave them with an empty screen and
+          no explanation — the single worst outcome for this flow. */}
+      <RejectedPanel photos={rejectedPhotos} accepted={uploaded} onRemove={onRemove} />
     </div>
   );
 };

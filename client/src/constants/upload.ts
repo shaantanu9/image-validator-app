@@ -37,11 +37,21 @@ export const MIN_PHOTOS = 6;
 export const MAX_PHOTOS = 10;
 
 /**
- * How many uploads run at once. The server allows 30 uploads per 15 minutes per
- * user, so a full 10-photo batch is never near the limit — 3 just keeps the
- * progress list legible instead of ten spinners racing.
+ * Uploads run ONE AT A TIME, and that is a correctness decision, not a throttle.
+ *
+ * Duplicate detection is a decision BETWEEN photos. The server guarantees that
+ * exactly one of N identical photos is accepted — but WHICH one depends on the
+ * order the requests arrive in. Fire three at once and they race: a user who picks
+ * `photo.jpg` and a downscaled `photo-small.jpg` can watch the ORIGINAL get
+ * rejected as a duplicate of the copy. (Observed exactly that at concurrency 3.)
+ *
+ * Sequential upload makes the winner the one the user picked FIRST, deterministically
+ * — which is both the documented behaviour and the only one that isn't baffling.
+ *
+ * The cost is real but small: validation is ~300ms/photo, so a full 10-photo set
+ * takes ~3s instead of ~1.5s.
  */
-export const UPLOAD_CONCURRENCY = 3;
+export const UPLOAD_CONCURRENCY = 1;
 
 export const ACCEPTED_LABEL = 'PNG, JPG, HEIC up to 5MB';
 
