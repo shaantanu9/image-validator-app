@@ -80,11 +80,15 @@ export const uploadImages = asyncHandler(async (req: Request, res: Response): Pr
 /** GET /api/v1/images?status=ACCEPTED|REJECTED — owner-scoped. */
 export const listImages = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // Express yields an ARRAY for `?status=a&status=b`, and `.toUpperCase()` on an
-  // array is a 500. Normalise before touching it.
+  // array throws — a 500 on what is really a malformed request. Reject it as the
+  // ambiguous input it is, rather than silently honouring one value and dropping
+  // the other.
   const raw = req.query['status'];
-  const first = Array.isArray(raw) ? raw[0] : raw;
-  const status = typeof first === 'string' ? first.toUpperCase() : undefined;
+  if (Array.isArray(raw)) {
+    throw ApiError.badRequest('Provide status once.');
+  }
 
+  const status = typeof raw === 'string' ? raw.toUpperCase() : undefined;
   if (status && status !== 'ACCEPTED' && status !== 'REJECTED') {
     throw ApiError.badRequest('status must be ACCEPTED or REJECTED.');
   }
