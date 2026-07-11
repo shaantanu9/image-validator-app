@@ -10,7 +10,7 @@
     "build": "pnpm --filter server build && pnpm --filter client build",
     "start": "pnpm --filter server start",
     "test": "pnpm --filter server test && pnpm --filter client test",
-    "test:api": "pnpm test:api",
+    "test:api": "cd \"bruno/Image Validator API\" && bru run . -r --env sql",
     "test:api:ci": "concurrently --kill-others --success first \"pnpm --filter server dev\" \"sleep 8 && pnpm --filter server run db:seed && pnpm test:api\"",
     "test:e2e": "vitest run --config e2e/vitest.config.ts",
     "test:all": "pnpm test && pnpm test:api:ci && pnpm test:e2e",
