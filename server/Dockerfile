@@ -4,7 +4,7 @@
 #   docker run -p 5012:5012 --env-file server/.env image_validator-server
 
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN pnpm db:generate && pnpm build
 RUN pnpm prune --prod
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:25-alpine AS production
 
 WORKDIR /app
 
