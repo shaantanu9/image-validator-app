@@ -22,14 +22,14 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.0",
-    "@commitlint/config-conventional": "^21.2.0",
-    "@usebruno/cli": "^3.5.1",
-    "concurrently": "^8.2.2",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@usebruno/cli": "^4.0.0",
+    "concurrently": "^10.0.5",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
-    "puppeteer": "^25.3.0",
-    "vitest": "^3.2.7"
+    "lint-staged": "^17.3.0",
+    "puppeteer": "^25.8.0",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=20.0.0",
